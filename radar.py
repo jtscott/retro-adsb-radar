@@ -201,10 +201,14 @@ class RadarScope:
         # Direction arrow if we have track data
         if aircraft.track > 0:
             track_rad = math.radians(aircraft.track)
-            line_length = 15
 
+            # Trail length varies with speed
+            min_length = 8
+            max_length = 25
+            max_speed = 500  # Maximum speed to consider for scaling
+            trail_length = min_length + (max_length - min_length) * min(aircraft.speed, max_speed) / max_speed
+            
             # Trailing line (behind)
-            trail_length = 12
             trail_x = x - trail_length * math.sin(track_rad)
             trail_y = y + trail_length * math.cos(track_rad)
             pygame.draw.line(self.screen, colour, (int(trail_x), int(trail_y)), (x, y), 2)
