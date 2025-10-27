@@ -5,7 +5,7 @@ TAR1090_URL = http://localhost/tar1090/data/aircraft.json
 BLINK_MILITARY = true
 
 [Audio]
-ATC_STREAM_URL =
+ATC_STREAM_URL = https://s1-fmt2.liveatc.net/vhhh5
 AUTO_START = false
 
 [Location]

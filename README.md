@@ -7,6 +7,7 @@ Aircraft radar display built with Python and Pygame. Visualises real-time aircra
 - Military aircraft detection with configurable hex code prefixes and blinking effect
 - Configurable font sizes and display settings
 - Tabular display of aircraft data (callsign, altitude, speed, distance, track)
+- Live ATC audio streaming from a specified URL
 - Retro colour palette
 - Terminus TTF fonts for an authentic look
 - Default configuration is compatible with the [Hagibis Mini PC USB-C Hub](https://hagibis.com/products-p00288p1.html)
@@ -46,7 +47,7 @@ Configure the application:
 
 ### Run the Radar UI
 ```bash
-python3 radar.py
+python3 main.py
 ```
 
 To quit, press `Q` or `ESC` in the radar window.
@@ -60,6 +61,10 @@ FETCH_INTERVAL = 10                # Data fetch interval (seconds)
 MIL_PREFIX_LIST = 7CF              # Comma-separated list of military aircraft hex prefixes (e.g. 7CF,AE,43C)
 TAR1090_URL = http://localhost/tar1090/data/aircraft.json  # tar1090 data source URL
 BLINK_MILITARY = true              # Toggle blinking effect for military aircraft (true/false)
+
+[Audio]
+ATC_STREAM_URL = https://s1-fmt2.liveatc.net/vhhh5  # ATC audio URL
+AUTO_START = false                 # Start ATC stream automatically
 
 [Location]
 LAT = -31.9522                     # Radar centre latitude
@@ -80,6 +85,18 @@ TABLE_FONT_SIZE = 22               # Font size for the data table
 INSTRUCTION_FONT_SIZE = 12         # Font size for instruction text
 ```
 
+## ATC Audio Streaming
+This project can stream live Air Traffic Control (ATC) audio from an online or local source.
+
+1.  Find a live ATC audio stream URL. A common source is [LiveATC.net](https://www.liveatc.net/).
+2.  Open your `config.ini` file.
+3.  Add the `[Audio]` section (or edit it if it exists).
+4.  Paste your stream URL into the `ATC_STREAM_URL` field.
+
+To toggle audio, press `A` in the radar window.
+
+**Note:** Audio streaming depends on a stable internet connection and the availability of the source stream. There may be a short delay or buffer when the application starts or when audio is toggled.
+
 ## Pygame SDL Dependency Check and Troubleshooting
 
 Pygame relies on several SDL subsystems, including:
@@ -87,7 +104,6 @@ Pygame relies on several SDL subsystems, including:
 - Video subsystem (`libsdl2`)
 - Font rendering (`libsdl2-ttf`)
 - Image loading (`libsdl2-image`)
-- Audio playback (`libsdl2-mixer`)
 
 The availability of these modules is checked at startup. If dependencies are installed on your system, the output will be:
 
@@ -96,7 +112,6 @@ Checking Pygame module support...
 ✅ Video: Supported
 ✅ Font: Supported
 ✅ Image: Supported
-✅ Mixer: Supported
 ```
 
 If modules are missing, the output will look like this:
@@ -106,7 +121,6 @@ Checking Pygame module support...
 ❌ Video: Not available - install libsdl2-2.0-0
 ❌ Font: Not available - install libsdl2-ttf-2.0-0
 ❌ Image: Not available - install libsdl2-image-2.0-0
-❌ Mixer: Not available - install libsdl2-mixer-2.0-0
 ```
 
 ### How to Fix Missing Dependencies
@@ -115,7 +129,7 @@ If you see errors indicating missing dependencies, you can install the required 
 
 ```
 sudo apt update
-sudo apt install libsdl2-2.0-0 libsdl2-ttf-2.0-0 libsdl2-image-2.0-0 libsdl2-mixer-2.0-0
+sudo apt install libsdl2-2.0-0 libsdl2-ttf-2.0-0 libsdl2-image-2.0-0
 ```
 
 ## License
