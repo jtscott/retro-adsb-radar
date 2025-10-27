@@ -87,14 +87,16 @@ Pygame relies on several SDL subsystems, including:
 - Video subsystem (`libsdl2`)
 - Font rendering (`libsdl2-ttf`)
 - Image loading (`libsdl2-image`)
+- Audio playback (`libsdl2-mixer`)
 
-The availability of these modules is checked at startup. If dependencies are  installed on your system, the output will be:
+The availability of these modules is checked at startup. If dependencies are installed on your system, the output will be:
 
 ```
 Checking Pygame module support...
 ✅ Video: Supported
 ✅ Font: Supported
 ✅ Image: Supported
+✅ Mixer: Supported
 ```
 
 If modules are missing, the output will look like this:
@@ -104,6 +106,7 @@ Checking Pygame module support...
 ❌ Video: Not available - install libsdl2-2.0-0
 ❌ Font: Not available - install libsdl2-ttf-2.0-0
 ❌ Image: Not available - install libsdl2-image-2.0-0
+❌ Mixer: Not available - install libsdl2-mixer-2.0-0
 ```
 
 ### How to Fix Missing Dependencies
@@ -112,7 +115,7 @@ If you see errors indicating missing dependencies, you can install the required 
 
 ```
 sudo apt update
-sudo apt install libsdl2-2.0-0 libsdl2-ttf-2.0-0 libsdl2-image-2.0-0
+sudo apt install libsdl2-2.0-0 libsdl2-ttf-2.0-0 libsdl2-image-2.0-0 libsdl2-mixer-2.0-0
 ```
 
 ## License

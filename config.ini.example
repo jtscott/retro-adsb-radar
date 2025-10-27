@@ -4,6 +4,10 @@ MIL_PREFIX_LIST = 7CF
 TAR1090_URL = http://localhost/tar1090/data/aircraft.json
 BLINK_MILITARY = true
 
+[Audio]
+ATC_STREAM_URL =
+AUTO_START = false
+
 [Location]
 LAT = -31.9522
 LON = 115.8614

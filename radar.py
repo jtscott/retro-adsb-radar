@@ -10,6 +10,7 @@ from typing import List, Optional, Tuple
 
 import pygame
 import requests
+import vlc
 
 # Read configuration
 config = configparser.ConfigParser()
@@ -22,6 +23,9 @@ FETCH_INTERVAL = config.getint('General', 'FETCH_INTERVAL', fallback=10)
 MIL_PREFIX_LIST = [prefix.strip() for prefix in config.get('General', 'MIL_PREFIX_LIST', fallback='7CF').split(',')]
 TAR1090_URL = config.get('General', 'TAR1090_URL', fallback='http://localhost/data/aircraft.json')
 BLINK_MILITARY = config.getboolean('General', 'BLINK_MILITARY', fallback=True)
+
+ATC_STREAM_URL = config.get('Audio', 'ATC_STREAM_URL', fallback='')
+ATC_AUTO_START = config.getboolean('Audio', 'AUTO_START', fallback=False)
 
 LAT = config.getfloat('Location', 'LAT', fallback=0.0)
 LON = config.getfloat('Location', 'LON', fallback=0.0)
@@ -51,6 +55,64 @@ AMBER = (255, 191, 0)
 # Font cache
 _font_cache = {}
 
+import vlc
+
+class AudioManager:
+    """Manages ATC audio stream playback using a single, persistent VLC instance."""
+    def __init__(self, stream_url: str = None):
+        self.stream_url = stream_url
+        self.player = None
+        self.instance = None
+        self.initialised = False
+
+    def initialise(self) -> bool:
+        """Initialise VLC instance and load stream if URL provided"""
+        if not self.stream_url or self.initialised:
+            return False
+
+        try:
+            self.instance = vlc.Instance('--no-xlib')
+            self.player = self.instance.media_player_new()    
+            media = self.instance.media_new(self.stream_url)
+            media.add_option(':network-caching=1000')           
+            self.player.set_media(media)
+            self.initialised = True
+            print("✅ Audio manager initialised successfully")
+            return True
+        except Exception as e:
+            print(f"❌ Error initialising audio. Is VLC installed? Details: {e}")
+            self.player = None
+            self.instance = None
+            return False
+
+    def toggle(self):
+        """Toggles the audio stream on or off."""
+        if not self.player:
+            return
+
+        if self.player.is_playing():
+            self.player.stop()
+            print("\n✅ Audio stream stopped")
+        else:
+            self.player.play()
+            print("\n✅ Audio stream started")
+
+    def is_playing(self) -> bool:
+        """Returns True if the audio stream is currently playing."""
+        if not self.player:
+            return False
+        return self.player.is_playing()
+
+    def shutdown(self):
+        """Stops playback and releases VLC resources cleanly."""
+        if self.player:
+            self.player.stop()
+        if self.instance:
+            self.instance.release()
+        self.player = None
+        self.instance = None
+        print("✅ Audio shut down cleanly")
+
 @dataclass
 class Aircraft:
     """Aircraft data from tar1090"""
@@ -64,108 +126,6 @@ class Aircraft:
     distance: float
     bearing: float
     is_military: bool = False
-
-def calculate_distance_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> Tuple[float, float]:
-    """Calculate distance in nautical miles and bearing in degrees using Haversine formula"""
-    # Convert to radians
-    lat1_rad, lon1_rad = math.radians(lat1), math.radians(lon1)
-    lat2_rad, lon2_rad = math.radians(lat2), math.radians(lon2)
-
-    # Distance calculation
-    dlat = lat2_rad - lat1_rad
-    dlon = lon2_rad - lon1_rad
-    a = math.sin(dlat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon/2)**2
-    distance_km = 2 * math.asin(math.sqrt(a)) * 6371  # Earth radius = 6371km
-    distance_nm = distance_km * 0.539957  # Convert to nautical miles
-
-    # Bearing calculation
-    y = math.sin(dlon) * math.cos(lat2_rad)
-    x = math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(lat1_rad) * math.cos(lat2_rad) * math.cos(dlon)
-    bearing = (math.degrees(math.atan2(y, x)) + 360) % 360
-
-    return distance_nm, bearing
-
-def check_pygame_modules():
-    """Verify essential Pygame modules are available due to SDL dependencies."""
-    print("\nChecking Pygame module support...")
-    
-    # Video (SDL_video)
-    if pygame.display.get_init():
-        print("✅ Video: Supported")
-    else:
-        print("❌ Video: Not available - install libsdl2-2.0-0")
-    
-    # Font (SDL_ttf)
-    if pygame.font.get_init():
-        print("✅ Font: Supported")
-    else:
-        print("❌ Font: Not available - install libsdl2-ttf-2.0-0")
-    
-    # Image (SDL_image)
-    if pygame.image.get_extended():
-        print("✅ Image: Supported")
-    else:
-        print("❌ Image: Not available - install libsdl2-image-2.0-0")
-
-def load_background(path: str) -> Optional[pygame.Surface]:
-    """Load and scale background image if it exists"""
-    try:
-        print(f"\nLoading background image from {path}...")
-        bg = pygame.image.load(path)
-        print("✅ Background image loaded successfully")
-        if bg.get_size() != (SCREEN_WIDTH, SCREEN_HEIGHT):
-            print(f"❌ Warning: Background image size {bg.get_size()} doesn't match display resolution {SCREEN_WIDTH}x{SCREEN_HEIGHT}")
-            bg = pygame.transform.scale(bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
-        return bg
-    except (pygame.error, FileNotFoundError) as e:
-        print(f"❌ Warning: Couldn't load background image: {e}")
-        return None
-
-def load_font(size: int) -> pygame.font.Font:
-    """Load font with fallback to default pygame font"""
-    if size in _font_cache:
-        return _font_cache[size]
-        
-    try:
-        font = pygame.font.Font(FONT_PATH, size)
-        print(f"✅ Loaded font {FONT_PATH} at size {size}")
-    except (pygame.error, FileNotFoundError):
-        print(f"❌ Warning: Could not load {FONT_PATH}, falling back to default font")
-        font = pygame.font.Font(None, size)
-    
-    _font_cache[size] = font
-    return font
-
-def parse_aircraft(data: dict) -> Optional[Aircraft]:
-    """Parse tar1090 aircraft data into Aircraft object"""
-    # Skip aircraft without position
-    if 'lat' not in data or 'lon' not in data:
-        return None
-
-    lat, lon = data['lat'], data['lon']
-    distance, bearing = calculate_distance_bearing(LAT, LON, lat, lon)
-
-    # Skip aircraft outside our range
-    if distance > RADIUS_NM:
-        return None
-
-    # Simple military detection using defined prefixes
-    hex_code = data['hex'].lower()
-    mil_prefixes = tuple(prefix.lower() for prefix in MIL_PREFIX_LIST)
-    is_military = hex_code.startswith(mil_prefixes)
-
-    return Aircraft(
-        hex_code=hex_code,
-        callsign=data.get('flight', 'UNKNOWN').strip()[:8],
-        lat=lat,
-        lon=lon,
-        altitude=data.get('alt_baro', 0) or 0,
-        speed=int(data.get('gs', 0) or 0),
-        track=data.get('track', 0) or 0,
-        distance=distance,
-        bearing=bearing,
-        is_military=is_military
-    )
 
 class RadarScope:
     """Radar display component"""
@@ -380,6 +340,117 @@ class AircraftTracker:
         thread = threading.Thread(target=self.update_loop, daemon=True)
         thread.start()
 
+def calculate_distance_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> Tuple[float, float]:
+    """Calculate distance in nautical miles and bearing in degrees using Haversine formula"""
+    # Convert to radians
+    lat1_rad, lon1_rad = math.radians(lat1), math.radians(lon1)
+    lat2_rad, lon2_rad = math.radians(lat2), math.radians(lon2)
+
+    # Distance calculation
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+    a = math.sin(dlat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon/2)**2
+    distance_km = 2 * math.asin(math.sqrt(a)) * 6371  # Earth radius = 6371km
+    distance_nm = distance_km * 0.539957  # Convert to nautical miles
+
+    # Bearing calculation
+    y = math.sin(dlon) * math.cos(lat2_rad)
+    x = math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(lat1_rad) * math.cos(lat2_rad) * math.cos(dlon)
+    bearing = (math.degrees(math.atan2(y, x)) + 360) % 360
+
+    return distance_nm, bearing
+
+def check_pygame_modules():
+    """Verify essential Pygame modules are available due to SDL dependencies."""
+    print("\nChecking Pygame module support...")
+    
+    # Initialize all Pygame modules
+    pygame.init()
+
+    # Video (SDL_video)
+    if pygame.display.get_init():
+        print("✅ Video: Supported")
+    else:
+        print("❌ Video: Not available - install libsdl2-2.0-0")
+
+    # Font (SDL_ttf)
+    if pygame.font.get_init():
+        print("✅ Font: Supported")
+    else:
+        print("❌ Font: Not available - install libsdl2-ttf-2.0-0")
+
+    # Image (SDL_image)
+    if pygame.image.get_extended():
+        print("✅ Image: Supported")
+    else:
+        print("❌ Image: Not available - install libsdl2-image-2.0-0")
+
+    # Mixer (SDL_mixer)
+    if pygame.mixer.get_init():
+        print("✅ Mixer: Supported")
+    else:
+        print("❌ Mixer: Not available - install libsdl2-mixer-2.0-0")
+
+def load_background(path: str) -> Optional[pygame.Surface]:
+    """Load and scale background image if it exists"""
+    try:
+        print(f"\nLoading background image from {path}...")
+        bg = pygame.image.load(path)
+        print("✅ Background image loaded successfully")
+        if bg.get_size() != (SCREEN_WIDTH, SCREEN_HEIGHT):
+            print(f"⚠️ Warning: Background image size {bg.get_size()} doesn't match display resolution {SCREEN_WIDTH}x{SCREEN_HEIGHT}")
+            bg = pygame.transform.scale(bg, (SCREEN_WIDTH, SCREEN_HEIGHT))
+        return bg
+    except (pygame.error, FileNotFoundError) as e:
+        print(f"⚠️ Warning: Couldn't load background image: {e}")
+        return None
+
+def load_font(size: int) -> pygame.font.Font:
+    """Load font with fallback to default pygame font"""
+    if size in _font_cache:
+        return _font_cache[size]
+        
+    try:
+        font = pygame.font.Font(FONT_PATH, size)
+        print(f"✅ Loaded font {FONT_PATH} at size {size}")
+    except (pygame.error, FileNotFoundError):
+        print(f"⚠️ Warning: Could not load {FONT_PATH}, falling back to default font")
+        font = pygame.font.Font(None, size)
+    
+    _font_cache[size] = font
+    return font
+
+def parse_aircraft(data: dict) -> Optional[Aircraft]:
+    """Parse tar1090 aircraft data into Aircraft object"""
+    # Skip aircraft without position
+    if 'lat' not in data or 'lon' not in data:
+        return None
+
+    lat, lon = data['lat'], data['lon']
+    distance, bearing = calculate_distance_bearing(LAT, LON, lat, lon)
+
+    # Skip aircraft outside our range
+    if distance > RADIUS_NM:
+        return None
+
+    # Simple military detection using defined prefixes
+    hex_code = data['hex'].lower()
+    mil_prefixes = tuple(prefix.lower() for prefix in MIL_PREFIX_LIST)
+    is_military = hex_code.startswith(mil_prefixes)
+
+    return Aircraft(
+        hex_code=hex_code,
+        callsign=data.get('flight', 'UNKNOWN').strip()[:8],
+        lat=lat,
+        lon=lon,
+        altitude=data.get('alt_baro', 0) or 0,
+        speed=int(data.get('gs', 0) or 0),
+        track=data.get('track', 0) or 0,
+        distance=distance,
+        bearing=bearing,
+        is_military=is_military
+    )
+
 def main():
     """Main application loop"""
     print("\nStarting Retro ADS-B Radar...")
@@ -418,6 +489,12 @@ def main():
 
     table = DataTable(screen, SCREEN_WIDTH // 2 + 20, 80, 
                      SCREEN_WIDTH // 2 - 30, SCREEN_HEIGHT - 100)
+                     
+    # Initialise audio manager
+    audio = AudioManager(ATC_STREAM_URL)
+    if audio.initialise() and ATC_AUTO_START:
+        print("Auto-starting ATC audio...")
+        audio.toggle()
 
     # Start aircraft tracker
     tracker = AircraftTracker()
@@ -431,7 +508,19 @@ def main():
                 event.type == pygame.KEYDOWN and event.key in (pygame.K_q, pygame.K_ESCAPE)
             ):
                 running = False
-            elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP):
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_a:
+                if audio:
+                    audio.toggle()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                # Handle mouse clicks
+                mouse_pos = pygame.mouse.get_pos()
+                if audio and audio_rect.collidepoint(mouse_pos):
+                    audio.toggle()
+                elif quit_rect.collidepoint(mouse_pos):
+                    running = False
+                last_mouse_move = time.time()
+                pygame.mouse.set_visible(True)
+            elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONUP):
                 last_mouse_move = time.time()
                 pygame.mouse.set_visible(True)
 
@@ -461,24 +550,41 @@ def main():
         radar.draw(tracker.aircraft)
         table.draw(tracker.aircraft, tracker.status, tracker.last_update)
 
-        # Instructions with clickable area
-        instructions_text = "PRESS Q OR ESC TO QUIT"
-        instructions = _font_cache[INSTRUCTION_FONT_SIZE].render(instructions_text, True, DIM_GREEN)
-        instructions_rect = instructions.get_rect(x=15, y=SCREEN_HEIGHT - 30)
+        # Instructions with clickable areas
+        quit_text = "Q/ESC: QUIT"
+        if audio and audio.initialised:
+            audio_text = f"A: ATC [{'ON' if audio.is_playing() else 'OFF'}]"
+        else:
+            audio_text = ""
 
-        # Change colour on hover
+        quit_surface = _font_cache[INSTRUCTION_FONT_SIZE].render(quit_text, True, DIM_GREEN)
+        audio_surface = _font_cache[INSTRUCTION_FONT_SIZE].render(audio_text, True, DIM_GREEN)
+        
+        # Position text
+        quit_rect = quit_surface.get_rect(x=15, y=SCREEN_HEIGHT - 30)
+        audio_rect = audio_surface.get_rect(x=quit_rect.right + 20, y=SCREEN_HEIGHT - 30)
+        
+        # Check mouse position for hover effects
         mouse_pos = pygame.mouse.get_pos()
-        if instructions_rect.collidepoint(mouse_pos):
-            instructions = _font_cache[INSTRUCTION_FONT_SIZE].render(instructions_text, True, BRIGHT_GREEN)
-            if any(pygame.mouse.get_pressed()):
-                running = False
-
-        screen.blit(instructions, instructions_rect)
+        if quit_rect.collidepoint(mouse_pos):
+            quit_surface = _font_cache[INSTRUCTION_FONT_SIZE].render(quit_text, True, BRIGHT_GREEN)
+        elif audio_rect.collidepoint(mouse_pos):
+            audio_surface = _font_cache[INSTRUCTION_FONT_SIZE].render(audio_text, True, BRIGHT_GREEN)
+                
+        # Draw both parts
+        screen.blit(quit_surface, quit_rect)
+        screen.blit(audio_surface, audio_rect)
 
         pygame.display.flip()
         clock.tick(FPS)
 
     tracker.running = False
+    
+    # Cleanup audio if it initialised
+    if audio and audio.initialised:
+        audio.shutdown()
+
+    print("✅ Shutting down...")
     pygame.quit()
 
 if __name__ == "__main__":
