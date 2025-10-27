@@ -1,5 +1,3 @@
-import vlc
-
 class AudioManager:
     """Manages ATC audio stream playback using a single, persistent VLC instance."""
     def __init__(self, stream_url: str = None):
@@ -9,11 +7,16 @@ class AudioManager:
         self.initialised = False
 
     def initialise(self) -> bool:
-        """Initialise VLC instance and load stream if URL provided"""
+        """
+        Initialises the VLC instance and loads the stream.
+        The 'vlc' module is imported here to make it an optional dependency.
+        """
         if not self.stream_url or self.initialised:
             return False
 
         try:
+            import vlc
+
             self.instance = vlc.Instance('--no-xlib')
             self.player = self.instance.media_player_new()
             media = self.instance.media_new(self.stream_url)
@@ -22,8 +25,11 @@ class AudioManager:
             self.initialised = True
             print("✅ Audio manager initialised successfully")
             return True
+        except ModuleNotFoundError:
+            print("❌ Error: 'python-vlc' not found. Please install it to use the audio feature.")
+            return False
         except Exception as e:
-            print(f"❌ Error initialising audio. Is VLC installed? Details: {e}")
+            print(f"❌ Error initialising audio. Is the VLC application installed? Details: {e}")
             self.player = None
             self.instance = None
             return False
@@ -54,5 +60,7 @@ class AudioManager:
             self.instance.release()
         self.player = None
         self.instance = None
-        print("✅ Audio shut down cleanly")
+
+        if self.initialised:
+            print("✅ Audio shut down cleanly")
 
