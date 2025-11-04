@@ -1,3 +1,6 @@
+import os
+os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+
 import pygame
 import sys
 import time
@@ -11,14 +14,6 @@ from data_fetcher import AircraftTracker
 from ui_components import RadarScope, DataTable
 
 def main():
-    # --- Make UI a bit nicer to audio ---
-    try:
-        import os
-        if hasattr(os, "nice"):
-            os.nice(5)  
-    except Exception:
-        pass
-    
     """Main application loop"""
     print("\nStarting Retro ADS-B Radar...")
     print(f"📍 Location: {config.AREA_NAME} ({config.LAT}°, {config.LON}°)")
