@@ -17,10 +17,10 @@ class AudioManager:
         try:
             import vlc
 
-            self.instance = vlc.Instance('--no-xlib')
+            self.instance = vlc.Instance()
             self.player = self.instance.media_player_new()
             media = self.instance.media_new(self.stream_url)
-            media.add_option(':network-caching=3000')
+            media.add_option(':network-caching=5000')
             media.add_option(':clock-jitter=0')
             media.add_option(':clock-synchro=0')
             self.player.set_media(media)
