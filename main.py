@@ -1,3 +1,4 @@
+# Set SDL_AUDIODRIVER to guarantee no device is opened for audio output
 import os
 os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 
@@ -20,12 +21,12 @@ def main():
     print(f"📡 Range: {config.RADIUS_NM} NM")
     print(f"🖥️ Display: {config.SCREEN_WIDTH}x{config.SCREEN_HEIGHT} at {config.FPS} FPS")
 
-    # --- Initialisation ---
+    # Initialisation
     pygame.display.init()
     pygame.font.init()
     utils.check_pygame_modules()
 
-    # --- Preload all required fonts into a local dictionary ---
+    # Preload all required fonts into a local dictionary
     print("\nPreloading fonts...")
     font_cache = {
         'header': utils.load_font(config.HEADER_FONT_SIZE),
@@ -34,23 +35,23 @@ def main():
         'instruction': utils.load_font(config.INSTRUCTION_FONT_SIZE)
     }
 
-    # --- Display Setup ---
+    # Display Setup
     screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT), pygame.FULLSCREEN | pygame.SCALED)
     pygame.display.set_caption(f"{config.AREA_NAME} ADS-B RADAR")
     clock = pygame.time.Clock()
     background = utils.load_background(config.BACKGROUND_PATH) if config.BACKGROUND_PATH else None
     
-    # --- Mouse Visibility Control ---
+    # Mouse Visibility Control
     last_mouse_move = time.time()
     MOUSE_HIDE_DELAY = 3.0
     pygame.mouse.set_visible(True)
 
-    # --- Create Components ---
+    # Create Components
     radar_size = min(config.SCREEN_HEIGHT - 120, config.SCREEN_WIDTH // 2 - 50) // 2
     radar = RadarScope(screen, config.SCREEN_WIDTH // 4, config.SCREEN_HEIGHT // 2 + 35, radar_size)
     table = DataTable(screen, config.SCREEN_WIDTH // 2 + 20, 80, config.SCREEN_WIDTH // 2 - 30, config.SCREEN_HEIGHT - 100)
     
-    # --- Initialise Audio and Data Tracker ---
+    # Initialise Audio and Data Tracker
     audio = AudioManager(config.ATC_STREAM_URL)
     if audio.initialise() and config.ATC_AUTO_START:
         print("Auto-starting ATC audio...")
@@ -59,10 +60,10 @@ def main():
     tracker = AircraftTracker()
     tracker.start()
 
-    # --- Main Loop ---
+    # Main Loop
     running = True
     while running:
-        # --- Event Handling ---
+        # Event Handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key in (pygame.K_q, pygame.K_ESCAPE)):
                 running = False
@@ -81,30 +82,30 @@ def main():
                 last_mouse_move = time.time()
                 pygame.mouse.set_visible(True)
 
-        # --- Mouse Cursor Visibility ---
+        # Mouse Cursor Visibility
         if time.time() - last_mouse_move > MOUSE_HIDE_DELAY:
             pygame.mouse.set_visible(False)
 
-        # --- Drawing ---
+        # Drawing
         screen.blit(background, (0, 0)) if background else screen.fill(config.BLACK)
 
-        # --- Header ---
+        # Header
         current_time = datetime.now().strftime("%H:%M:%S")
         header_text = f"{config.AREA_NAME} {config.LAT}°, {config.LON}° - {current_time}"
         header = font_cache['header'].render(header_text, True, config.AMBER)
         header_rect = header.get_rect(centerx=config.SCREEN_WIDTH // 2, y=15)
         screen.blit(header, header_rect)
 
-        # --- Radar Title ---
+        # Radar Title
         radar_title = font_cache['radar'].render("◄ ADS-B RADAR SCOPE ►", True, config.AMBER)
         radar_title_rect = radar_title.get_rect(centerx=config.SCREEN_WIDTH//4, y=config.SCREEN_HEIGHT//2 - radar_size)
         screen.blit(radar_title, radar_title_rect)
 
-        # --- Components ---
+        # Components
         radar.draw(tracker.aircraft)
         table.draw(tracker.aircraft, tracker.status, tracker.last_update)
 
-        # --- Instructions with Clickable Areas ---
+        # Instructions with Clickable Areas
         quit_text = "Q/ESC: QUIT"
         audio_text = f"A: ATC [{'ON' if audio.is_playing() else 'OFF'}]" if audio and audio.initialised else ""
         
@@ -114,7 +115,7 @@ def main():
         quit_rect = quit_surface.get_rect(x=15, y=config.SCREEN_HEIGHT - 30)
         audio_rect = audio_surface.get_rect(x=quit_rect.right + 20, y=config.SCREEN_HEIGHT - 30)
         
-        # --- Hover Effects for Instructions ---
+        # Hover Effects for Instructions
         mouse_pos = pygame.mouse.get_pos()
         if quit_rect.collidepoint(mouse_pos):
             quit_surface = font_cache['instruction'].render(quit_text, True, config.BRIGHT_GREEN)
@@ -124,11 +125,11 @@ def main():
         screen.blit(quit_surface, quit_rect)
         screen.blit(audio_surface, audio_rect)
 
-        # --- Update Display ---
+        # Update Display
         pygame.display.flip()
         clock.tick(config.FPS)
 
-    # --- Shutdown ---
+    # Shutdown
     tracker.running = False
     if audio and audio.initialised:
         audio.shutdown()
