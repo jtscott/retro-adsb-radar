@@ -1,82 +1,68 @@
-import subprocess
-import threading
-import time
-
-
 class AudioManager:
-    """
-    Manages ATC audio stream playback using an external VLC subprocess.
-    Runs VLC with high buffer settings and controls playback lifecycle.
-    """
+    """Manages ATC audio stream playback using a single, persistent VLC instance."""
     def __init__(self, stream_url: str = None):
         self.stream_url = stream_url
-        self.process = None
+        self.player = None
+        self.instance = None
         self.initialised = False
-        self._poll_thread = None
-        self._stop_poll = threading.Event()
-    
+
     def initialise(self) -> bool:
-        if not self.stream_url:
-            print("❌ No stream URL configured")
+        """
+        Initialises the VLC instance and loads the stream.
+        The 'vlc' module is imported here to make it an optional dependency.
+        """
+        if not self.stream_url or self.initialised:
             return False
-        self.initialised = True
-        print("✅ Audio manager initialised")
-        return True
 
-    def _poll_process(self):
-        while not self._stop_poll.is_set():
-            if self.process:
-                retcode = self.process.poll()
-                if retcode is not None:
-                    print(f"❌ VLC process exited with code {retcode}")
-                    self.process = None
-                    self._stop_poll.set()
-                    break
-            time.sleep(0.5)
-
-    def play(self):
-        if not self.initialised:
-            return
-        if self.is_playing():
-            print("ℹ️ Already playing")
-            return
         try:
-            self.process = subprocess.Popen([
-                'cvlc',  # Use cvlc for no GUI
-                '--quiet',
-                '--network-caching=10000',  # 10 sec buffer for stability
-                self.stream_url
-            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            self._stop_poll.clear()
-            self._poll_thread = threading.Thread(target=self._poll_process, daemon=True)
-            self._poll_thread.start()
-            print("▶️  Audio stream started")
-        except FileNotFoundError:
-            print("❌ VLC not found. Make sure VLC is installed and 'cvlc' is in PATH")
+            import vlc
 
-    def stop(self):
-        if self.process:
-            self.process.terminate()
-            try:
-                self.process.wait(timeout=3)
-            except subprocess.TimeoutExpired:
-                self.process.kill()
-            self.process = None
-            self._stop_poll.set()
-            if self._poll_thread:
-                self._poll_thread.join(timeout=1)
-            print("⏹️  Audio stream stopped")
+            self.instance = vlc.Instance()
+            self.player = self.instance.media_player_new()
+            media = self.instance.media_new(self.stream_url)
+            media.add_option(':network-caching=5000')
+            media.add_option(':clock-jitter=0')
+            media.add_option(':clock-synchro=0')
+            self.player.set_media(media)
+            self.initialised = True
+            print("✅ Audio manager initialised successfully")
+            return True
+        except ModuleNotFoundError:
+            print("❌ Error: 'python-vlc' not found. Please install it to use the audio feature.")
+            return False
+        except Exception as e:
+            print(f"❌ Error initialising audio. Is the VLC application installed? Details: {e}")
+            self.player = None
+            self.instance = None
+            return False
 
     def toggle(self):
-        if self.is_playing():
-            self.stop()
-        else:
-            self.play()
+        """Toggles the audio stream on or off."""
+        if not self.player:
+            return
 
-    def is_playing(self):
-        return self.process is not None and self.process.poll() is None
+        if self.player.is_playing():
+            self.player.stop()
+            print("✅ Audio stream stopped")
+        else:
+            self.player.play()
+            print("✅ Audio stream started")
+
+    def is_playing(self) -> bool:
+        """Returns True if the audio stream is currently playing."""
+        if not self.player:
+            return False
+        return self.player.is_playing()
 
     def shutdown(self):
-        self.stop()
-        self.initialised = False
-        print("✅ Audio manager shut down cleanly")
+        """Stops playback and releases VLC resources cleanly."""
+        if self.player:
+            self.player.stop()
+        if self.instance:
+            self.instance.release()
+        self.player = None
+        self.instance = None
+
+        if self.initialised:
+            print("✅ Audio shut down cleanly")
+
