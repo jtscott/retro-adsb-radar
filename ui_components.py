@@ -34,7 +34,7 @@ class RadarScope:
         pygame.draw.circle(self.screen, colour, (x, y), 5, 0)
         if aircraft.track > 0:
             track_rad = math.radians(aircraft.track)
-            min_length, max_length, max_speed = 8, 25, 500
+            min_length, max_length, max_speed = config.TRAIL_MIN_LENGTH, config.TRAIL_MAX_LENGTH, config.TRAIL_MAX_SPEED
             trail_length = min_length + (max_length - min_length) * min(aircraft.speed, max_speed) / max_speed
             trail_x = x - trail_length * math.sin(track_rad)
             trail_y = y + trail_length * math.cos(track_rad)

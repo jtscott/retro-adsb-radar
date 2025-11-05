@@ -11,8 +11,11 @@ class AudioManager:
         Initialises the VLC instance and loads the stream.
         The 'vlc' module is imported here to make it an optional dependency.
         """
-        if not self.stream_url or self.initialised:
-            return False
+        if self.initialised:
+            return False  # Already initialised, no need to reinitialise
+    
+        if not self.stream_url:
+            return False  # Can't initialise without a stream URL
 
         try:
             import vlc

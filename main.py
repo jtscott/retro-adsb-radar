@@ -63,25 +63,6 @@ def main():
     # Main Loop
     running = True
     while running:
-        # Event Handling
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key in (pygame.K_q, pygame.K_ESCAPE)):
-                running = False
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_a:
-                if audio: audio.toggle()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_pos = pygame.mouse.get_pos()
-                # Check for clicks on instruction text areas
-                if audio and audio_rect.collidepoint(mouse_pos):
-                    audio.toggle()
-                elif quit_rect.collidepoint(mouse_pos):
-                    running = False
-                last_mouse_move = time.time()
-                pygame.mouse.set_visible(True)
-            elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONUP):
-                last_mouse_move = time.time()
-                pygame.mouse.set_visible(True)
-
         # Mouse Cursor Visibility
         if time.time() - last_mouse_move > MOUSE_HIDE_DELAY:
             pygame.mouse.set_visible(False)
@@ -124,6 +105,25 @@ def main():
             
         screen.blit(quit_surface, quit_rect)
         screen.blit(audio_surface, audio_rect)
+
+        # Event Handling
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key in (pygame.K_q, pygame.K_ESCAPE)):
+                running = False
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_a:
+                if audio: audio.toggle()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_pos = pygame.mouse.get_pos()
+                # Check for clicks on instruction text areas
+                if audio and audio_rect.collidepoint(mouse_pos):
+                    audio.toggle()
+                elif quit_rect.collidepoint(mouse_pos):
+                    running = False
+                last_mouse_move = time.time()
+                pygame.mouse.set_visible(True)
+            elif event.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONUP):
+                last_mouse_move = time.time()
+                pygame.mouse.set_visible(True)
 
         # Update Display
         pygame.display.flip()

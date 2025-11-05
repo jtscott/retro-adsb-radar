@@ -5,7 +5,7 @@ TAR1090_URL = http://localhost/tar1090/data/aircraft.json
 BLINK_MILITARY = true
 
 [Audio]
-ATC_STREAM_URL = https://s1-fmt2.liveatc.net/vhhh5
+ATC_STREAM_URL =
 AUTO_START = false
 
 [Location]
@@ -21,6 +21,9 @@ FPS = 6
 MAX_TABLE_ROWS = 10
 FONT_PATH = fonts/TerminusTTF-4.49.3.ttf
 BACKGROUND_PATH =
+TRAIL_MIN_LENGTH = 8
+TRAIL_MAX_LENGTH = 25
+TRAIL_MAX_SPEED = 500
 HEADER_FONT_SIZE = 32
 RADAR_FONT_SIZE = 22
 TABLE_FONT_SIZE = 22

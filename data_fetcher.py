@@ -21,7 +21,11 @@ class AircraftTracker:
             response = requests.get(config.TAR1090_URL, timeout=10)
             response.raise_for_status()
             data = response.json()
-            aircraft_list = [ac for ac_data in data.get('aircraft', []) if (ac := Aircraft.from_dict(ac_data))]
+            aircraft_list = []
+            for ac_data in data.get('aircraft', []):
+                ac = Aircraft.from_dict(ac_data)
+                if ac:
+                    aircraft_list.append(ac)
             print(f"✅ Found {len(aircraft_list)} aircraft within {config.RADIUS_NM}NM range")
             return aircraft_list
         except requests.RequestException as e:

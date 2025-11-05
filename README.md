@@ -63,8 +63,8 @@ TAR1090_URL = http://localhost/tar1090/data/aircraft.json  # tar1090 data source
 BLINK_MILITARY = true              # Toggle blinking effect for military aircraft (true/false)
 
 [Audio]
-ATC_STREAM_URL = https://s1-fmt2.liveatc.net/vhhh5  # ATC audio URL
-AUTO_START = false                 # Start ATC stream automatically
+ATC_STREAM_URL =                   # URL of live ATC audio stream (leave blank to disable)
+AUTO_START = false                 # Start ATC stream automatically (true/false)
 
 [Location]
 LAT = -31.9522                     # Radar centre latitude
@@ -78,7 +78,10 @@ SCREEN_HEIGHT = 640                # Window height (pixels)
 FPS = 6                            # Frames per second
 MAX_TABLE_ROWS = 10                # Maximum number of aircraft to show in the table
 FONT_PATH = fonts/TerminusTTF-4.49.3.ttf  # Path to TTF font
-BACKGROUND_PATH =                  # Optional path to background image
+BACKGROUND_PATH =                  # Path to background image (leave blank for black background)
+TRAIL_MIN_LENGTH = 8               # Minimum length of aircraft trail
+TRAIL_MAX_LENGTH = 25              # Maximum length of aircraft trail
+TRAIL_MAX_SPEED = 500              # Speed (knots) at which trail reaches maximum length
 HEADER_FONT_SIZE = 32              # Font size for the header text
 RADAR_FONT_SIZE = 22               # Font size for radar labels and callsigns
 TABLE_FONT_SIZE = 22               # Font size for the data table
@@ -88,14 +91,11 @@ INSTRUCTION_FONT_SIZE = 12         # Font size for instruction text
 ## ATC Audio Streaming
 This project can stream live Air Traffic Control (ATC) audio from an online or local source.
 
-1.  Find a live ATC audio stream URL. A common source is [LiveATC.net](https://www.liveatc.net/).
-2.  Open your `config.ini` file.
-3.  Add the `[Audio]` section (or edit it if it exists).
-4.  Paste your stream URL into the `ATC_STREAM_URL` field.
+1.  Open your `config.ini` file.
+2.  Add the `[Audio]` section (or edit it if it exists).
+3.  Paste your live ATC audio stream URL into the `ATC_STREAM_URL` field.
 
 To toggle audio, press `A` in the radar window.
-
-**Note:** Audio streaming depends on a stable internet connection and the availability of the source stream. There may be a short delay or buffer when the application starts or when audio is toggled.
 
 ## Pygame SDL Dependency Check and Troubleshooting
 
