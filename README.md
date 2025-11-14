@@ -8,8 +8,7 @@ Aircraft radar display built with Python and Pygame. Visualises real-time aircra
 - Configurable font sizes and display settings
 - Tabular display of aircraft data (callsign, altitude, speed, distance, track)
 - Live ATC audio streaming from a specified URL
-- Retro colour palette
-- Terminus TTF fonts for an authentic look
+- Retro colour palette and font
 - Default configuration is compatible with the [Hagibis Mini PC USB-C Hub](https://hagibis.com/products-p00288p1.html)
 
 ![Retro ADS-B Radar Screenshot](images/screenshot.png)
@@ -40,20 +39,24 @@ Install dependencies:
   ```
   pip install -r requirements.txt
   ```
-Configure the application:
-  - Copy `config.ini.example` to `config.ini`.
-  - Edit `config.ini` to set the `TAR1090URL` to your tar1090 data source URL (default: `http://localhost/tar1090/data/aircraft.json`).
-  - Adjust location and display settings as needed.
+Make a copy of the example configuration and edit to suit your setup:
+
+```
+cp config.ini.example config.ini
+nano config.ini
+```
+See below for configuration details.
 
 ### Run the Radar UI
+After configuring `config.ini`, start the radar application:
 ```bash
 python3 main.py
 ```
 
-To quit, press `Q` or `ESC` in the radar window.
+To quit, press `Q` or `ESC` in the radar window. If ATC audio streaming is enabled by setting a `ATC_STREAM_URL`, press `A` to toggle audio on/off.
 
 ## Configuration
-The application is configured via `config.ini`. Copy `config.ini.example` to `config.ini` and adjust as needed:
+The application is configured via `config.ini`.
 
 ```ini
 [General]
@@ -83,19 +86,10 @@ TRAIL_MIN_LENGTH = 8               # Minimum length of aircraft trail
 TRAIL_MAX_LENGTH = 25              # Maximum length of aircraft trail
 TRAIL_MAX_SPEED = 500              # Speed (knots) at which trail reaches maximum length
 HEADER_FONT_SIZE = 32              # Font size for the header text
-RADAR_FONT_SIZE = 22               # Font size for radar labels and callsigns
-TABLE_FONT_SIZE = 22               # Font size for the data table
-INSTRUCTION_FONT_SIZE = 12         # Font size for instruction text
+RADAR_FONT_SIZE = 28               # Font size for radar labels and callsigns
+TABLE_FONT_SIZE = 28               # Font size for the data table
+INSTRUCTION_FONT_SIZE = 28         # Font size for instruction text
 ```
-
-## ATC Audio Streaming
-This project can stream live Air Traffic Control (ATC) audio from an online or local source.
-
-1.  Open your `config.ini` file.
-2.  Add the `[Audio]` section (or edit it if it exists).
-3.  Paste your live ATC audio stream URL into the `ATC_STREAM_URL` field.
-
-To toggle audio, press `A` in the radar window.
 
 ## Pygame SDL Dependency Check and Troubleshooting
 
@@ -134,4 +128,4 @@ sudo apt install libsdl2-2.0-0 libsdl2-ttf-2.0-0 libsdl2-image-2.0-0
 
 ## License
 - The project code is licensed under the MIT License (see `LICENSE`).
-- Fonts used in this project are licensed under the SIL Open Font License Version 1.1. See font license files in the `fonts/` directory for details.
+- Fonts used in this project are licensed under the SIL Open Font License Version 1.1. See font license files in the `fonts` directory for details.

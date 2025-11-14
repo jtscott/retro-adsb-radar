@@ -86,27 +86,54 @@ def main():
         radar.draw(tracker.aircraft)
         table.draw(tracker.aircraft, tracker.status, tracker.last_update)
 
-        # Instructions with Clickable Areas
+        # Instructions with clickable areas (centered under radar scope)
         quit_text = "Q/ESC: QUIT"
         audio_text = f"A: ATC [{'ON' if audio.is_playing() else 'OFF'}]" if audio and audio.initialised else ""
-        
-        quit_surface = font_cache['instruction'].render(quit_text, True, config.DIM_GREEN)
-        audio_surface = font_cache['instruction'].render(audio_text, True, config.DIM_GREEN)
-        
-        quit_rect = quit_surface.get_rect(x=15, y=config.SCREEN_HEIGHT - 30)
-        audio_rect = audio_surface.get_rect(x=quit_rect.right + 20, y=config.SCREEN_HEIGHT - 30)
-        
-        # Hover Effects for Instructions
-        mouse_pos = pygame.mouse.get_pos()
-        if quit_rect.collidepoint(mouse_pos):
-            quit_surface = font_cache['instruction'].render(quit_text, True, config.BRIGHT_GREEN)
-        elif audio_rect.collidepoint(mouse_pos):
-            audio_surface = font_cache['instruction'].render(audio_text, True, config.BRIGHT_GREEN)
-            
-        screen.blit(quit_surface, quit_rect)
-        screen.blit(audio_surface, audio_rect)
 
-        # Event Handling
+        # Combine both texts with spacing
+        instruction_text = quit_text
+        if audio_text:
+            instruction_text += "    " + audio_text
+
+        instruction_surface = font_cache['instruction'].render(instruction_text, True, config.DIM_GREEN)
+        # Centre the instructions under the radar scope (same centerx as radar title)
+        instruction_rect = instruction_surface.get_rect(centerx=config.SCREEN_WIDTH // 4, y=config.SCREEN_HEIGHT - 55)
+
+        # For hover/click, calculate the rects for each part
+        quit_surface = font_cache['instruction'].render(quit_text, True, config.DIM_GREEN)
+        quit_rect = quit_surface.get_rect()
+        quit_rect.y = config.SCREEN_HEIGHT - 55
+        # Place quit_rect at left of combined text
+        quit_rect.x = instruction_rect.x
+
+        if audio_text:
+            audio_surface = font_cache['instruction'].render(audio_text, True, config.DIM_GREEN)
+            audio_rect = audio_surface.get_rect()
+            audio_rect.y = config.SCREEN_HEIGHT - 55
+            # Place audio_rect after quit_rect with spacing
+            audio_rect.x = quit_rect.right + font_cache['instruction'].size('    ')[0]
+        else:
+            audio_surface = None
+            audio_rect = None
+        
+        # Hover effects for instructions
+        mouse_pos = pygame.mouse.get_pos()
+        # Default: both dim
+        quit_col = config.DIM_GREEN
+        audio_col = config.DIM_GREEN
+        if quit_rect.collidepoint(mouse_pos):
+            quit_col = config.BRIGHT_GREEN
+        elif audio_rect and audio_rect.collidepoint(mouse_pos):
+            audio_col = config.BRIGHT_GREEN
+
+        # Redraw with highlight if hovered
+        quit_surface = font_cache['instruction'].render(quit_text, True, quit_col)
+        screen.blit(quit_surface, quit_rect)
+        if audio_surface and audio_rect:
+            audio_surface = font_cache['instruction'].render(audio_text, True, audio_col)
+            screen.blit(audio_surface, audio_rect)
+
+        # Event handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key in (pygame.K_q, pygame.K_ESCAPE)):
                 running = False
@@ -125,7 +152,7 @@ def main():
                 last_mouse_move = time.time()
                 pygame.mouse.set_visible(True)
 
-        # Update Display
+        # Update display
         pygame.display.flip()
         clock.tick(config.FPS)
 

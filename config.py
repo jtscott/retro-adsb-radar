@@ -34,9 +34,9 @@ TRAIL_MIN_LENGTH = config.getint('Display', 'TRAIL_MIN_LENGTH', fallback=8)
 TRAIL_MAX_LENGTH = config.getint('Display', 'TRAIL_MAX_LENGTH', fallback=25)
 TRAIL_MAX_SPEED = config.getint('Display', 'TRAIL_MAX_SPEED', fallback=500)
 HEADER_FONT_SIZE = config.getint('Display', 'HEADER_FONT_SIZE', fallback=32)
-RADAR_FONT_SIZE = config.getint('Display', 'RADAR_FONT_SIZE', fallback=22)
-TABLE_FONT_SIZE = config.getint('Display', 'TABLE_FONT_SIZE', fallback=22)
-INSTRUCTION_FONT_SIZE = config.getint('Display', 'INSTRUCTION_FONT_SIZE', fallback=12)
+RADAR_FONT_SIZE = config.getint('Display', 'RADAR_FONT_SIZE', fallback=28)
+TABLE_FONT_SIZE = config.getint('Display', 'TABLE_FONT_SIZE', fallback=28)
+INSTRUCTION_FONT_SIZE = config.getint('Display', 'INSTRUCTION_FONT_SIZE', fallback=28)
 
 # Colours
 BLACK = (0, 0, 0)
