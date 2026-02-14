@@ -22,6 +22,8 @@ LAT = config.getfloat('Location', 'LAT', fallback=0.0)
 LON = config.getfloat('Location', 'LON', fallback=0.0)
 AREA_NAME = config.get('Location', 'AREA_NAME', fallback='UNKNOWN')
 RADIUS_NM = config.getint('Location', 'RADIUS_NM', fallback=60)
+# ADDED: This line allows the app to read your facing direction
+RADAR_ROTATION = config.getint('Location', 'RADAR_ROTATION', fallback=0)
 
 # Display Settings
 SCREEN_WIDTH = config.getint('Display', 'SCREEN_WIDTH', fallback=960)

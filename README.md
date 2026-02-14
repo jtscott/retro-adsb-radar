@@ -1,131 +1,103 @@
-# Retro ADS-B Radar ✈
+# Retro ADS-B Radar
+> 🤖 **AI Vibe Coded:** This project was done with Gemini, prioritizing my own customizations. I think the terrain feature is busted.
 
-Aircraft radar display built with Python and Pygame. Visualises real-time aircraft positions and metadata from a tar1090 server, with a retro interface.
+> **Original Credits:**
+> This project is a fork of [nicespoon's retro-adsb-radar](https://github.com/nicespoon/retro-adsb-radar.git).  
+> **License:** MIT License (Code) | SIL Open Font License 1.1 (Fonts)
 
-## Features
-- Real-time radar visualisation of aircraft within a configurable radius
-- Military aircraft detection with configurable hex code prefixes and blinking effect
-- Configurable font sizes and display settings
-- Tabular display of aircraft data (callsign, altitude, speed, distance, track)
-- Live ATC audio streaming from a specified URL
-- Retro colour palette and font
-- Default configuration is compatible with the [Hagibis Mini PC USB-C Hub](https://hagibis.com/products-p00288p1.html)
+## ✈ Project Overview
+This fork modifies the original radar to run on an **adsb.im** Raspberry Pi image using a **Waveshare 400x1280 HDMI display** (Portrait Mode). 
 
-![Retro ADS-B Radar Screenshot](images/screenshot.png)
+## 🛠 Key Changes & Features
+### 1. Data Table
+The data display has been expanded to 8 columns:
+- **AIRLINE:** Extracted from `ownOp` (First word only).
+- **CALLSIGN:** Standard flight ID.
+- **TYPE:** Aircraft model (extracted from `t` in JSON).
+- **SQWK:** Squawk code with visual alerting.
+- **ALT / SPD / DIST / TRK:** Standard telemetry.
 
-![Retro ADS-B Radar Running on Hagibis Mini PC USB-C Hub](images/hagibis_display.jpg)
+### 2. Visual Alerting System
+The UI now uses color-coded logic to highlight states:
+- **RED (Flashing):** Emergency Squawks (`7700`, `7500`).
+- **AMBER:** Radio Failure (`7600`).
+- **RED (Solid):** Military Aircraft.
+- **WHITE:** VFR Traffic (`1200`).
+- **BRIGHT GREEN:** Standard Commercial Traffic.
 
-## Quick Start
+### 3. Display Geometry
+- **Resolution:** Hardcoded for **400x1280** (Portrait).
+- **Burn-in Protection:** Includes a 5px pixel-shift jitter every 5 minutes.
 
-### Hardware Setup
-- Connect your ADS-B USB dongle (e.g. RTL-SDR) to a Raspberry Pi or similar single-board computer.
-- Attach a suitable 1090 MHz antenna to the dongle.
-- Ensure the dongle is running software that provides ADS-B data in JSON format, such as [tar1090](https://github.com/wiedehopf/tar1090).
-- Connect your Raspberry Pi to your display, such as the Hagibis Mini PC USB-C Hub, with an HDMI cable.
+### 4. Radar Scope
+- **Compass:** Added NESW markers.
+- **Degrees:** Degrees and tick marks are now around the radar.
+- **Sweep:** Added a trail glow visual to the radar sweep line at 12 RPM.
 
-### Software Setup
-Clone the repository:
-  ```
-  git clone https://github.com/nicespoon/retro-adsb-radar.git
-  cd retro-adsb-radar
-  ```
-Create and activate a virtual environment:
-```
-python3 -m venv venv
-source venv/bin/activate
-```
+## ⚙ Installation
+### 1. Hardware & OS
+- Raspberry Pi running `adsb.im` image.
+- Waveshare 7.9inch HDMI LCD (or similar 400x1280 display).
 
-Install dependencies:
-  ```
-  pip install -r requirements.txt
-  ```
-Make a copy of the example configuration and edit to suit your setup:
-
-```
-cp config.ini.example config.ini
-nano config.ini
-```
-See below for configuration details.
-
-### Run the Radar UI
-After configuring `config.ini`, start the radar application:
+### 2. Prerequisites
+Install these to ensure Pygame has the necessary SDL libraries for graphics, audio, and fonts.
 ```bash
-python3 main.py
+sudo apt update
+sudo apt install -y python3-pygame libsdl2-2.0-0 libsdl2-image-2.0-0 libsdl2-mixer-2.0-0 libsdl2-ttf-2.0-0 libsdl2-gfx-1.0-0
+```
+Edit the boot config for waveshare display
+```bash
+sudo nano /boot/firmware/config.txt
+```
+With:
+```
+# Waveshare 7.9inch HDMI LCD
+hdmi_group=2
+hdmi_mode=87
+hdmi_timings=400 0 100 10 140 1280 10 20 20 2 0 0 0 60 0 43000000 3
+dtoverlay=vc4-kms-v3d
+max_framebuffer_width=1280
+max_framebuffer_height=1280
+display_rotate=1
+```
+Reboot
+
+### 3. Service Installation
+This fork includes a portable installer to set up the systemd service automatically.
+
+```bash
+# Make the installer executable
+chmod +x /root/retro-adsb-radar/install_service.sh
+
+# Run the installer
+sudo ./install_service.sh
 ```
 
-To quit, press `Q` or `ESC` in the radar window. If ATC audio streaming is enabled by setting a `ATC_STREAM_URL`, press `A` to toggle audio on/off.
+## 📝 Configuration (config.ini)
+The configuration file has been updated to support the new display geometry and local data fetching.
 
-## Configuration
-The application is configured via `config.ini`.
+### Key Additions
+- **TAR1090_URL:** Points to your local JSON feed (critical for independent operation).
+- **TERRAIN:** Enables the custom map overlay logic.
+- **MIL_PREFIX_LIST:** Comma-separated list of hex prefixes to flag as military (Solid Red).
 
 ```ini
-[General]
-FETCH_INTERVAL = 10                # Data fetch interval (seconds)
-MIL_PREFIX_LIST = 7CF              # Comma-separated list of military aircraft hex prefixes (e.g. 7CF,AE,43C)
-TAR1090_URL = http://localhost/tar1090/data/aircraft.json  # tar1090 data source URL
-BLINK_MILITARY = true              # Toggle blinking effect for military aircraft (true/false)
-
-[Audio]
-ATC_STREAM_URL =                   # URL of live ATC audio stream (leave blank to disable)
-AUTO_START = false                 # Start ATC stream automatically (true/false)
-
-[Location]
-LAT = -31.9522                     # Radar centre latitude
-LON = 115.8614                     # Radar centre longitude
-AREA_NAME = PERTH                  # Displayed area name
-RADIUS_NM = 60                     # Radar range (nautical miles)
-
-[Display]
-SCREEN_WIDTH = 960                 # Window width (pixels)
-SCREEN_HEIGHT = 640                # Window height (pixels)
-FPS = 6                            # Frames per second
-MAX_TABLE_ROWS = 10                # Maximum number of aircraft to show in the table
-FONT_PATH = fonts/TerminusTTF-4.49.3.ttf  # Path to TTF font
-BACKGROUND_PATH =                  # Path to background image (leave blank for black background)
-TRAIL_MIN_LENGTH = 8               # Minimum length of aircraft trail
-TRAIL_MAX_LENGTH = 25              # Maximum length of aircraft trail
-TRAIL_MAX_SPEED = 500              # Speed (knots) at which trail reaches maximum length
-HEADER_FONT_SIZE = 32              # Font size for the header text
-RADAR_FONT_SIZE = 28               # Font size for radar labels and callsigns
-TABLE_FONT_SIZE = 28               # Font size for the data table
-INSTRUCTION_FONT_SIZE = 28         # Font size for instruction text
+[DISPLAY]
+# Waveshare Portrait Geometry
+FULLSCREEN = True
+# Rotate the radar according to your viewpoint of the radar in the physical world
+RADAR_ROTATION = 0
+# Show terrain in the radar scope
+TERRAIN = True
 ```
 
-## Pygame SDL Dependency Check and Troubleshooting
+## 🗺️ Terrain Setup (Optional)
+To enable the map overlay (rivers, major roads) on the radar scope:
 
-Pygame relies on several SDL subsystems, including:
-
-- Video subsystem (`libsdl2`)
-- Font rendering (`libsdl2-ttf`)
-- Image loading (`libsdl2-image`)
-
-The availability of these modules is checked at startup. If dependencies are installed on your system, the output will be:
-
-```
-Checking Pygame module support...
-✅ Video: Supported
-✅ Font: Supported
-✅ Image: Supported
-```
-
-If modules are missing, the output will look like this:
-
-```
-Checking Pygame module support...
-❌ Video: Not available - install libsdl2-2.0-0
-❌ Font: Not available - install libsdl2-ttf-2.0-0
-❌ Image: Not available - install libsdl2-image-2.0-0
-```
-
-### How to Fix Missing Dependencies
-
-If you see errors indicating missing dependencies, you can install the required system packages using the following command:
-
-```
-sudo apt update
-sudo apt install libsdl2-2.0-0 libsdl2-ttf-2.0-0 libsdl2-image-2.0-0
-```
-
-## License
-- The project code is licensed under the MIT License (see `LICENSE`).
-- Fonts used in this project are licensed under the SIL Open Font License Version 1.1. See font license files in the `fonts` directory for details.
+1. Go to **geojson.io**
+2. Navigate to your radar location
+3. Use **Draw LineString** or **Draw Polygon** to trace features you want on the radar  
+   (Bow River, Deerfoot, etc).
+4. Click **Save → GeoJSON**.
+5. Rename downloaded file to: /root/retro-adsb-radar/terrain.json
+6. Ensure this is enabled in config: TERRAIN = True

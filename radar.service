@@ -1,0 +1,15 @@
+[Unit]
+Description=Retro ADSB Radar Display
+After=network.target sound.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/retro-adsb-radar
+ExecStart=/usr/bin/python3 /root/retro-adsb-radar/main.py
+Restart=always
+RestartSec=5
+Environment=SDL_AUDIODRIVER=dummy
+
+[Install]
+WantedBy=multi-user.target
