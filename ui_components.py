@@ -152,7 +152,7 @@ class DataTable:
         title = self.font.render("ADSB AIRCRAFT DATA", True, theme['amber'])
         self.screen.blit(title, title.get_rect(centerx=self.rect.centerx, y=self.rect.y + 10))
         
-        headers = ["AIRLINE", "CALLSIGN", "TYPE", "  SQWK", "   ALT", "SPD", "DIST", "TRK"]
+        headers = ["AIRLINE", "CALLSIGN", "TYPE", "SQWK", " ALT", "SPD", "DIST", "TRK"]
         
         ratios = [0.21, 0.20, 0.10, 0.10, 0.14, 0.10, 0.09, 0.06]
         
@@ -183,8 +183,19 @@ class DataTable:
             trend = "↑" if a_hex in self.last_alt and alt > self.last_alt[a_hex] + 100 else "↓" if a_hex in self.last_alt and alt < self.last_alt[a_hex] - 100 else " "
             self.last_alt[a_hex] = alt
             
+            op_raw = str(getattr(a, 'own_op', ''))
+            
+            # If airline starts with "AIR ", remove the space to combine them (AIR CANADA -> AIRCANADA)
+            if op_raw.startswith("AIR "):
+                op_fmt = op_raw.replace(" ", "")
+            else:
+                op_fmt = op_raw
+                
+            # Truncate to 9 chars max
+            op_fmt = op_fmt[:9]
+
             vals = [
-                f"{str(getattr(a, 'own_op', '')):<7}",
+                f"{op_fmt:<7}", # Updated to use the formatted op string
                 f"{str(getattr(a, 'callsign', '???')):<8}",
                 f"{str(getattr(a, 'type', '???')):<4}", 
                 f"{str(sq):<4}",
