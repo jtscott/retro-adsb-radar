@@ -6,7 +6,8 @@
 > **License:** MIT License (Code) | SIL Open Font License 1.1 (Fonts)
 
 ## ✈ Project Overview
-This fork modifies the original radar to run on an **adsb.im** Raspberry Pi image using a **Waveshare 400x1280 HDMI display** (Portrait Mode). 
+This fork modifies the original radar to run on an **adsb.im** Raspberry Pi image using a **Waveshare 400x1280 HDMI display** (Portrait Mode).
+![Retro ADS-B Radar Screenshot](images/screenshot.png)
 
 ## 🛠 Key Changes & Features
 ### 1. Data Table
